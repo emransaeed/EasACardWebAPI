@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Web;
 using System.Web.Http;
 using System.Web.Http.Cors;
 
@@ -15,8 +16,23 @@ namespace EasACardWebAPI.Controllers
     {
         IList<IndividualProfile> customers = new List<IndividualProfile>();
         IList<CompanyProfile> companyCustomers = new List<CompanyProfile>();
+        IList<IndividualAccountDetails> customerAccountDetails = new List<IndividualAccountDetails>();
+        IList<CompanyAccountDetails> companyAccountDetails = new List<CompanyAccountDetails>();
 
         public CustomerController()
+        {
+            if (HttpContext.Current.Application["Customers"] != null)
+            {
+                customers = (List<IndividualProfile>)HttpContext.Current.Application["Customers"];
+                companyCustomers = (List<CompanyProfile>)HttpContext.Current.Application["CompanyCustomers"];
+            }
+            else
+            {
+                CreateTestData();
+            }
+        }
+
+        private void CreateTestData()
         {
             IndividualProfile ip = new IndividualProfile();
             ip.Country = "PK";
@@ -27,7 +43,6 @@ namespace EasACardWebAPI.Controllers
             ip.UserID = "1";
             ip.UserName = "u";
             ip.VerificationCode = "v";
-
             customers.Add(ip);
 
             ip = new IndividualProfile();
@@ -39,8 +54,26 @@ namespace EasACardWebAPI.Controllers
             ip.UserID = "2";
             ip.UserName = "u1";
             ip.VerificationCode = "v1";
-
             customers.Add(ip);
+
+            HttpContext.Current.Application["Customers"] = customers;
+
+            CompanyProfile cp = new CompanyProfile();
+            cp.Address = "A1";
+            cp.City = "Sydney";
+            cp.CompanyID = "C1";
+            cp.ContactPerson = "Imran";
+            cp.Country = "Australia";
+            cp.Email = "test@test.com";
+            cp.Mobile = "1234";
+            cp.Name = "C1";
+            cp.Password = "p";
+            cp.Phone = "1234";
+            cp.UserName = "cu1";
+            cp.VerificationCode = "v1";
+            companyCustomers.Add(cp);
+
+            HttpContext.Current.Application["CompanyCustomers"] = companyCustomers;
         }
 
         //Customer/GetAllCustomers
@@ -67,44 +100,85 @@ namespace EasACardWebAPI.Controllers
         //Customer/RegisterIndividual
         [Route("RegisterIndividual")]
         [HttpPost]
-        public void RegisterIndividual(IndividualProfile profile)
+        public IHttpActionResult RegisterIndividual(IndividualProfile profile)
         {
             customers.Add(profile);
+            HttpContext.Current.Application["Customers"] = customers;
+            return Json(new { Status = "Ok" });
         }
 
         //Customer/RegisterCompany
         [Route("RegisterCompany")]
         [HttpPost]
-        public void RegisterCompany(CompanyProfile profile)
+        public IHttpActionResult RegisterCompany(CompanyProfile profile)
         {
             companyCustomers.Add(profile);
+            HttpContext.Current.Application["CompanyCustomers"] = companyCustomers;
+            return Json(new { Status = "Ok" });
         }
 
         //Customer/LoginIndividual
         [Route("LoginIndividual")]
-        [HttpGet]
-        public IndividualAccountDetails LoginIndividual(string username, string password)
+        [HttpPost]
+        public IHttpActionResult LoginIndividual(UserProfile up)
         {
-            //Call DAL to validate the user
-            IndividualAccountDetails res = new IndividualAccountDetails();
-            res.AccountDetailID = 1;
-            res.CardsLimit=100;
-            res.ExpiryDate = DateTime.Now;
-            res.UserID = "1";
-            return res;
+            int count = customers.Where(c => c.UserName == up.UserName && c.Password == up.Password).Count();
+            if (count == 1)
+            {
+                return Json(new { Status = "Ok", CardsLimit = 100, ExpiryDate = DateTime.Now, UserName = "1" }); 
+            }
+            else
+            {
+                return Json(new { Status = "Failed" }); 
+            }
         }
 
         //Customer/LoginCompany
         [Route("LoginCompany")]
-        [HttpGet]
-        public CompanyAccountDetails LoginCompany(string username, string password)
+        [HttpPost]
+        public IHttpActionResult LoginCompany(UserProfile up)
         {
-            //Call DAL to validate the user
-            CompanyAccountDetails res = new CompanyAccountDetails();
-            res.CompanyID = 1;
-            res.CardsLimit = 100;
-            res.ExpiryDate = DateTime.Now;
-            return res;
+            int count = companyCustomers.Where(c => c.UserName == up.UserName && c.Password == up.Password).Count();
+            if (count == 1)
+            {
+                return Json(new { Status = "Ok", UserName = "1", CardsLimit = 100, ExpiryDate = DateTime.Now });
+            }
+            else
+            {
+                return Json(new { Status = "Failed" });
+            }
+        }
+
+        //Customer/VerifyIndividual
+        [Route("VerifyIndividual")]
+        [HttpPost]
+        public IHttpActionResult VerifyIndividual(UserProfile up)
+        {
+            int count = customers.Where(c => c.UserName == up.UserName && c.VerificationCode == up.VerificationCode).Count();
+            if (count == 1)
+            {
+                return Json(new { Status = "Ok", CardsLimit = 100, ExpiryDate = DateTime.Now, UserName = "1" });
+            }
+            else
+            {
+                return Json(new { Status = "Failed" });
+            }
+        }
+
+        //Customer/VerifyCompany
+        [Route("VerifyCompany")]
+        [HttpPost]
+        public IHttpActionResult VerifyCompany(UserProfile up)
+        {
+            int count = companyCustomers.Where(c => c.UserName == up.UserName && c.VerificationCode == up.VerificationCode).Count();
+            if (count == 1)
+            {
+                return Json(new { Status = "Ok", UserName = "1", CardsLimit = 100, ExpiryDate = DateTime.Now });
+            }
+            else
+            {
+                return Json(new { Status = "Failed" });
+            }
         }
     }
 }

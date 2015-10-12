@@ -19,5 +19,6 @@ namespace EasACardWebAPI.Models
         public string VerificationCode { get; set; }
         public string Address { get; set; }
         public string City { get; set; }
+        public string AccountStatus { get; set; }
     }
 }

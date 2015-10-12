@@ -17,5 +17,6 @@ namespace EasACardWebAPI.Models
         public string Phone { get; set; }
         public string Name { get; set; }
         public string VerificationCode { get; set; }
+        public string AccountStatus { get; set; }
     }
 }
