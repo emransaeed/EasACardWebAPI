@@ -16,7 +16,7 @@ namespace EasACardWebAPI.Controllers
     {
         IList<IndividualProfile> customers = new List<IndividualProfile>();
         IList<CompanyProfile> companyCustomers = new List<CompanyProfile>();
-        IList<IndividualAccountDetails> customerAccountDetails = new List<IndividualAccountDetails>();
+        IList<IndividualAccountDetails> individualAccountDetails = new List<IndividualAccountDetails>();
         IList<CompanyAccountDetails> companyAccountDetails = new List<CompanyAccountDetails>();
 
         public CustomerController()
@@ -25,6 +25,8 @@ namespace EasACardWebAPI.Controllers
             {
                 customers = (List<IndividualProfile>)HttpContext.Current.Application["Customers"];
                 companyCustomers = (List<CompanyProfile>)HttpContext.Current.Application["CompanyCustomers"];
+                individualAccountDetails = (List<IndividualAccountDetails>)HttpContext.Current.Application["IndividualAccountDetails"];
+                companyAccountDetails = (List<CompanyAccountDetails>)HttpContext.Current.Application["CompanyAccountDetails"];
             }
             else
             {
@@ -36,27 +38,32 @@ namespace EasACardWebAPI.Controllers
         {
             IndividualProfile ip = new IndividualProfile();
             ip.Country = "PK";
-            ip.Email = "test@test.com";
-            ip.Name = "test";
+            ip.Email = "test1@test.com";
+            ip.Name = "test1";
             ip.Password = "psw";
             ip.Phone = "023232";
             ip.UserID = "1";
-            ip.UserName = "u";
-            ip.VerificationCode = "v";
+            ip.UserName = "u1";
+            ip.VerificationCode = "psw";
             customers.Add(ip);
+
+            CreateIndividualAccountDetails(100, DateTime.Now.AddMonths(6), "u1");
 
             ip = new IndividualProfile();
-            ip.Country = "PK1";
-            ip.Email = "test1@test.com";
-            ip.Name = "test1";
-            ip.Password = "psw1";
+            ip.Country = "PK";
+            ip.Email = "test2@test.com";
+            ip.Name = "test2";
+            ip.Password = "psw";
             ip.Phone = "0232321";
             ip.UserID = "2";
-            ip.UserName = "u1";
-            ip.VerificationCode = "v1";
+            ip.UserName = "u2";
+            ip.VerificationCode = "psw";
             customers.Add(ip);
 
+            CreateIndividualAccountDetails(100, DateTime.Now.AddMonths(6), "u2");
+
             HttpContext.Current.Application["Customers"] = customers;
+            HttpContext.Current.Application["IndividualAccountDetails"] = individualAccountDetails;
 
             CompanyProfile cp = new CompanyProfile();
             cp.Address = "A1";
@@ -64,16 +71,37 @@ namespace EasACardWebAPI.Controllers
             cp.CompanyID = "C1";
             cp.ContactPerson = "Imran";
             cp.Country = "Australia";
-            cp.Email = "test@test.com";
+            cp.Email = "testc1@test.com";
             cp.Mobile = "1234";
             cp.Name = "C1";
             cp.Password = "p";
             cp.Phone = "1234";
             cp.UserName = "cu1";
-            cp.VerificationCode = "v1";
+            cp.VerificationCode = "cu1";
             companyCustomers.Add(cp);
 
+            CreateCompanyAccountDetails(300, DateTime.Now.AddMonths(6), "cu1");
+
             HttpContext.Current.Application["CompanyCustomers"] = companyCustomers;
+            HttpContext.Current.Application["CompanyAccountDetails"] = companyAccountDetails;
+        }
+
+        private void CreateCompanyAccountDetails(int cardsLimit, DateTime expiryDate, string userName)
+        {
+            CompanyAccountDetails cad = new CompanyAccountDetails();
+            cad.CardsLimit = cardsLimit;
+            cad.ExpiryDate = expiryDate;
+            cad.UserName = userName;
+            companyAccountDetails.Add(cad);
+        }
+
+        private void CreateIndividualAccountDetails(int cardsLimit, DateTime expiryDate, string userName)
+        {
+            IndividualAccountDetails iad = new IndividualAccountDetails();
+            iad.CardsLimit = cardsLimit;
+            iad.ExpiryDate = expiryDate;
+            iad.UserName = userName;
+            individualAccountDetails.Add(iad);
         }
 
         //Customer/GetAllCustomers
@@ -102,8 +130,13 @@ namespace EasACardWebAPI.Controllers
         [HttpPost]
         public IHttpActionResult RegisterIndividual(IndividualProfile profile)
         {
+            profile.VerificationCode = profile.Password;
             customers.Add(profile);
+            CreateIndividualAccountDetails(100, DateTime.Now.AddMonths(6), profile.UserName);
+            
             HttpContext.Current.Application["Customers"] = customers;
+            HttpContext.Current.Application["IndividualAccountDetails"] = individualAccountDetails;
+
             return Json(new { Status = "Ok" });
         }
 
@@ -112,8 +145,13 @@ namespace EasACardWebAPI.Controllers
         [HttpPost]
         public IHttpActionResult RegisterCompany(CompanyProfile profile)
         {
+            profile.VerificationCode = profile.Password;
             companyCustomers.Add(profile);
+            CreateCompanyAccountDetails(300, DateTime.Now.AddMonths(6), profile.UserName);
+            
             HttpContext.Current.Application["CompanyCustomers"] = companyCustomers;
+            HttpContext.Current.Application["CompanyAccountDetails"] = companyAccountDetails;
+
             return Json(new { Status = "Ok" });
         }
 
@@ -157,7 +195,8 @@ namespace EasACardWebAPI.Controllers
             int count = customers.Where(c => c.UserName == up.UserName && c.VerificationCode == up.VerificationCode).Count();
             if (count == 1)
             {
-                return Json(new { Status = "Ok", CardsLimit = 100, ExpiryDate = DateTime.Now, UserName = "1" });
+                IndividualAccountDetails iad = individualAccountDetails.Where(u => u.UserName == up.UserName).First();
+                return Json(new { Status = "Ok", CardsLimit = iad.CardsLimit, ExpiryDate = iad.ExpiryDate, UserName = iad.UserName });
             }
             else
             {
@@ -173,7 +212,8 @@ namespace EasACardWebAPI.Controllers
             int count = companyCustomers.Where(c => c.UserName == up.UserName && c.VerificationCode == up.VerificationCode).Count();
             if (count == 1)
             {
-                return Json(new { Status = "Ok", UserName = "1", CardsLimit = 100, ExpiryDate = DateTime.Now });
+                CompanyAccountDetails cad = companyAccountDetails.Where(u => u.UserName == up.UserName).First();
+                return Json(new { Status = "Ok", CardsLimit = cad.CardsLimit, ExpiryDate = cad.ExpiryDate, UserName = cad.UserName });
             }
             else
             {
