@@ -7,7 +7,6 @@ namespace EasACardWebAPI.Models
 {
     public class CompanyProfile
     {
-        public string CompanyID { get; set; }
         public string UserName { get; set; }
         public string Email { get; set; }
         public string Password { get; set; }

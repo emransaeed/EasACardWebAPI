@@ -42,7 +42,6 @@ namespace EasACardWebAPI.Controllers
             ip.Name = "test1";
             ip.Password = "psw";
             ip.Phone = "023232";
-            ip.UserID = "1";
             ip.UserName = "u1";
             ip.VerificationCode = "psw";
             customers.Add(ip);
@@ -55,7 +54,6 @@ namespace EasACardWebAPI.Controllers
             ip.Name = "test2";
             ip.Password = "psw";
             ip.Phone = "0232321";
-            ip.UserID = "2";
             ip.UserName = "u2";
             ip.VerificationCode = "psw";
             customers.Add(ip);
@@ -68,16 +66,15 @@ namespace EasACardWebAPI.Controllers
             CompanyProfile cp = new CompanyProfile();
             cp.Address = "A1";
             cp.City = "Sydney";
-            cp.CompanyID = "C1";
             cp.ContactPerson = "Imran";
             cp.Country = "Australia";
             cp.Email = "testc1@test.com";
             cp.Mobile = "1234";
             cp.Name = "C1";
-            cp.Password = "p";
+            cp.Password = "psw";
             cp.Phone = "1234";
             cp.UserName = "cu1";
-            cp.VerificationCode = "cu1";
+            cp.VerificationCode = "psw";
             companyCustomers.Add(cp);
 
             CreateCompanyAccountDetails(300, DateTime.Now.AddMonths(6), "cu1");
@@ -112,12 +109,20 @@ namespace EasACardWebAPI.Controllers
             return customers;
         }
 
+        //Customer/GetAllCompanyCustomers
+        [Route("GetAllCompanyCustomers")]
+        [HttpGet]
+        public IList<CompanyProfile> GetAllCompanyCustomers()
+        {
+            return companyCustomers;
+        }
+
         //Customer/GetCustomer?userid=1
         [HttpGet]
         [Route("GetCustomer")]
-        public IndividualProfile GetCustomer(string userId)
+        public IndividualProfile GetCustomer(string userName)
         {
-            var customer = customers.FirstOrDefault((p) => p.UserID == userId);
+            var customer = customers.FirstOrDefault((p) => p.UserName == userName);
             if (customer == null)
             {
                 return null;
@@ -130,6 +135,12 @@ namespace EasACardWebAPI.Controllers
         [HttpPost]
         public IHttpActionResult RegisterIndividual(IndividualProfile profile)
         {
+            int count = customers.Where(c => c.UserName == profile.UserName).Count();
+            if (count >= 1)
+            {
+                return Json(new { Status = "Failed" });
+            }
+
             profile.VerificationCode = profile.Password;
             customers.Add(profile);
             CreateIndividualAccountDetails(100, DateTime.Now.AddMonths(6), profile.UserName);
@@ -145,6 +156,12 @@ namespace EasACardWebAPI.Controllers
         [HttpPost]
         public IHttpActionResult RegisterCompany(CompanyProfile profile)
         {
+            int count = companyCustomers.Where(c => c.UserName == profile.UserName).Count();
+            if (count >= 1)
+            {
+                return Json(new { Status = "Failed" });
+            }
+
             profile.VerificationCode = profile.Password;
             companyCustomers.Add(profile);
             CreateCompanyAccountDetails(300, DateTime.Now.AddMonths(6), profile.UserName);
